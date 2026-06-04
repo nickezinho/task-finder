@@ -37,4 +37,9 @@ class TaskResponse(BaseModel):
 
 class TaskUpdate(BaseModel):
     status: Status 
+
+
+class TaskRecommendationResponse(BaseModel):
+    task: TaskResponse
+    reason: str
     

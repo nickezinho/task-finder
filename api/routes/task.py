@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from schemas.tasks import TaskResponse, TaskUpdate, TaskCreate
+from schemas.tasks import TaskResponse, TaskUpdate, TaskCreate, TaskRecommendationResponse
 from services.task_service import TaskService
+from services.recommendation_service import RecommendationService as R
 from ..deps import get_current_user, get_db
 
 task_router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -23,6 +24,40 @@ async def create_task(
             status_code=400,
             detail=str(e)
         )
+    
+
+@task_router.post("/recommend/{goal_id}")
+async def create_task(
+    goal_id: int,
+    db: AsyncSession=Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Endpoint to create a new task."""
+    try:
+        result = await R.generate_recommendation(db, goal_id, current_user.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    
+@task_router.post("/recommend/single/{goal_id}", response_model=TaskRecommendationResponse)
+async def recommend_task(
+    goal_id: int,
+    db: AsyncSession=Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Endpoint to recommend a task."""
+    try:
+        result = await R.recommend_task(db, goal_id, current_user.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
 
 @task_router.get("/from-goal/{goal_id}", response_model=list[TaskResponse])
 async def list_goal_tasks(

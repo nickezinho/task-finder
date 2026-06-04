@@ -2,18 +2,19 @@ from sqlalchemy import select
 from models.tasks import Task
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.goal_repository import GoalRepository
+
 
 
 class TaskRepository:
 
     @staticmethod
-    async def create(session: AsyncSession, task_schema, user_id: int) -> Task:
+    async def create(session: AsyncSession, task_schema) -> Task:
 
         new_task = Task(
             title=task_schema.title,
             description=task_schema.description,
             estimated_minutes=task_schema.estimated_minutes,
+            difficulty=task_schema.difficulty,
             goal_id=task_schema.goal_id
         )
 

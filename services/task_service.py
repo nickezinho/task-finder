@@ -10,8 +10,7 @@ class TaskService:
     async def create_task(session, task_schema, user_id):
         new_task = await TaskRepository.create(
             session, 
-            task_schema, 
-            user_id
+            task_schema
         )
 
         return new_task

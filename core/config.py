@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     ALGORITHM: str
     SECRET_KEY: str
+    GEMINI_API_KEY: str
 
     model_config = ConfigDict(
         env_file=".env",
