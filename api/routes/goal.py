@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
-from core.security import verify_token
+from core.security import verify_token, limiter
 from ..deps import get_current_user, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.goal_service import GoalService
@@ -11,10 +11,13 @@ goal_router = APIRouter(prefix="/goals", tags=["goals"])
 
 
 @goal_router.post("/create", response_model=GoalResponse)
-async def create_goal(goal_schema: GoalCreate,
-                        db: AsyncSession=Depends(get_db),
-                        current_user = Depends(get_current_user)
-                    ) -> dict:
+@limiter.limit("5/minute")
+async def create_goal(
+    request: Request,
+    goal_schema: GoalCreate,
+    db: AsyncSession=Depends(get_db),
+    current_user = Depends(get_current_user)
+) -> dict:
     
     """Endpoint to create a new goal."""
 
@@ -33,6 +36,7 @@ async def list_my_goals(
     db: AsyncSession=Depends(get_db),
     current_user = Depends(get_current_user)
 ) -> list[GoalResponse]:
+    
     """Endpoint to list all goals of the current user."""
     try:
         result = await GoalService.list_user_goals(db, current_user.id)
@@ -50,7 +54,9 @@ async def get_goal_by_id(
     db: AsyncSession=Depends(get_db),
     current_user = Depends(get_current_user)
 ) -> GoalResponse:
+    
     """Endpoint to get a specific goal by its ID."""
+
     try:
         result = await GoalService.get_goal_by_id(db, goal_id, current_user.id)
         return result
@@ -64,13 +70,17 @@ async def get_goal_by_id(
 
 
 @goal_router.patch("/{goal_id}")
+@limiter.limit("5/minute")
 async def update_goal(
+    request: Request,
     goal_id: int,
     goal_update_schema: GoalUpdate,
     session: AsyncSession=Depends(get_db),
     current_user = Depends(get_current_user)
 ):
+    
     """Endpoint to update a specific goal by its ID."""
+
     try:
         result = await GoalService.update_goal(session, goal_id, goal_update_schema, current_user.id)
         return result
@@ -89,7 +99,9 @@ async def delete_goal(
     session: AsyncSession=Depends(get_db),
     current_user = Depends(get_current_user)
 ):
+    
     """Endpoint to delete a specific goal by its ID."""
+    
     try:
         await GoalService.delete_goal(session, goal_id, current_user.id)
         return {"detail": "Goal deleted successfully"}

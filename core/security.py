@@ -2,12 +2,14 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from core.config import settings
-
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+limiter = Limiter(key_func=get_remote_address)
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
