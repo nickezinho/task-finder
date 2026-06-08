@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from models.enums import Priority, Difficulty, Status
+from models.enums import Priority, Difficulty, Status, RecommendationMode
 
 
 class TaskCreate(BaseModel):
@@ -43,3 +43,6 @@ class TaskRecommendationResponse(BaseModel):
     task: TaskResponse
     reason: str
     
+
+class AlternativeTaskRequest(BaseModel):
+    mode: RecommendationMode

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from models.enums import RecommendationMode
 from schemas.tasks import TaskResponse, TaskUpdate, TaskCreate, TaskRecommendationResponse
 from services.task_service import TaskService
 from services.recommendation_service import RecommendationService as R
@@ -26,8 +26,8 @@ async def create_task(
         )
     
 
-@task_router.post("/recommend/{goal_id}")
-async def create_task(
+@task_router.post("/{goal_id}/recommend")
+async def create_recommendation_task(
     goal_id: int,
     db: AsyncSession=Depends(get_db),
     current_user = Depends(get_current_user)
@@ -42,7 +42,7 @@ async def create_task(
             detail=str(e)
         )
     
-@task_router.post("/recommend/single/{goal_id}", response_model=TaskRecommendationResponse)
+@task_router.post("/{goal_id}/recommend/single/", response_model=TaskRecommendationResponse)
 async def recommend_task(
     goal_id: int,
     db: AsyncSession=Depends(get_db),
@@ -58,6 +58,23 @@ async def recommend_task(
             detail=str(e)
         )
 
+@task_router.get("/{task_id}/alternative", response_model=TaskResponse)
+async def get_alternative_task(
+    task_id: int,
+    mode: RecommendationMode,
+    session: AsyncSession=Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Endpoint to get an alternative task based on the specified mode."""
+    try:
+        result = await R.alternative_task(session, task_id, mode, current_user.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    
 
 @task_router.get("/from-goal/{goal_id}", response_model=list[TaskResponse])
 async def list_goal_tasks(

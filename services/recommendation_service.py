@@ -3,8 +3,9 @@ from repositories.goal_repository import GoalRepository
 from repositories.task_repository import TaskRepository
 from clients.gemini_client import GeminiClient
 from schemas.tasks import TaskCreate
-from models.enums import Status
+from models.enums import Status, RecommendationMode
 from utils.prompts import generate_recommendation_prompt, generate_recommended_task
+from utils.helpers import get_easier_task, get_harder_task, get_quicker_task, get_slower_task
 import json
 import re
 
@@ -16,13 +17,11 @@ def _extract_json_payload(response_text: str):
 
     cleaned = response_text.strip()
 
-    # Try plain JSON first.
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
 
-    # Remove optional markdown fences.
     fence_match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned, re.DOTALL | re.IGNORECASE)
     if fence_match:
         candidate = fence_match.group(1).strip()
@@ -31,7 +30,6 @@ def _extract_json_payload(response_text: str):
         except json.JSONDecodeError:
             pass
 
-    # Fallback: extract first JSON object/array from text.
     array_match = re.search(r"\[.*\]", cleaned, re.DOTALL)
     if array_match:
         return json.loads(array_match.group(0))
@@ -41,6 +39,7 @@ def _extract_json_payload(response_text: str):
         return json.loads(obj_match.group(0))
 
     raise json.JSONDecodeError("No JSON payload found", cleaned, 0)
+
 
 class RecommendationService:
 
@@ -191,7 +190,45 @@ class RecommendationService:
             "reason": str(task_data["reason"]).strip()
         }
 
-    
-        
+    @staticmethod
+    async def alternative_task(session, task_id, mode, user_id):
 
+        current_task = await TaskRepository.get_task_by_id(session, task_id)
+
+        if not current_task:
+            raise HTTPException(
+                status_code=404,
+                detail="Task not found"
+            )
+
+        goal = await GoalRepository.get_goal_by_id(session, current_task.goal_id)
+
+        if not goal or goal.user_id != user_id:
+            raise HTTPException(
+                status_code=404,
+                detail="Task not found"
+            )
         
+        tasks = await TaskRepository.list_tasks_by_goal(session, goal.id)
+
+        if mode == RecommendationMode.EASIER:
+            recommended_task = get_easier_task(current_task, tasks)
+        elif mode == RecommendationMode.HARDER:
+            recommended_task = get_harder_task(current_task, tasks)
+        elif mode == RecommendationMode.QUICKER:
+            recommended_task = get_quicker_task(current_task, tasks)
+        elif mode == RecommendationMode.SLOWER:
+            recommended_task = get_slower_task(current_task, tasks)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid recommendation mode"
+            )
+
+        if not recommended_task:
+            raise HTTPException(
+                status_code=404,
+                detail="No alternative task found for the given mode"
+            )
+        
+        return recommended_task

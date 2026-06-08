@@ -17,3 +17,11 @@ class Status(str, Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
+
+
+class RecommendationMode(str, Enum):
+    EASIER = "easier"
+    HARDER = "harder"
+    QUICKER = "quicker"
+    SLOWER = "slower"
+
