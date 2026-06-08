@@ -18,7 +18,45 @@ async def home():
     return {"message": "login endpoint"}
 
 
-@auth_router.post("/register", response_model=RegisterResponse)
+@auth_router.post(
+    "/register", 
+    response_model=RegisterResponse,
+    summary="Register a new user",
+    description="""
+    Creates a new user account.
+
+    Rate limit: 5 requests per minute.
+
+    Requirements:
+    - `username`: Unique username for the user.
+    - 'email': Valid email address.
+    - 'password': Strong password for the account.
+    """,
+    responses={
+        200: {
+            "description": "User registered successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "User registered successfully",
+                        "user": {
+                            "id": 1,
+                            "username": "johndoe",
+                            "name": "John Doe",
+                            "email": "johndoe@example.com"
+                        }
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Bad Request - Invalid input data",
+        },
+        429: {
+            "description": "Too Many Requests - Rate limit exceeded",
+        }
+    }
+)
 @limiter.limit("5/minute")
 async def register(
     request: Request,
