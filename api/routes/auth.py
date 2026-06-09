@@ -64,7 +64,7 @@ async def register(
     db: AsyncSession=Depends(get_db),
 ) -> dict:
     
-    """Registration endpoint for new users."""
+    """Registration endpoint to create a new user."""
 
     try:
         result = await AuthService.register_user(db, user)
@@ -76,7 +76,36 @@ async def register(
         )
     
 
-@auth_router.post("/login")
+@auth_router.post(
+        "/login",
+        summary="User login",
+        description="""
+        Authenticates a user and returns access and refresh tokens.
+        Rate limit: 10 requests per minute.
+        Requirements:
+        - `username`: The username of the user.
+        - `password`: The password of the user.
+        """,
+        responses={
+            200: {
+                "description": "User logged in successfully",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                            "refresh_token": "dfghjkl1234567890qwertyuiopasdfghjklzxcvbnm"
+                        }
+                    }
+                }
+            },
+            400: {
+                "description": "Bad Request - Invalid username or password",
+            },
+            429: {
+                "description": "Too Many Requests - Rate limit exceeded",
+            }
+        }
+)
 @limiter.limit("10/minute")
 async def login(
     request: Request,
@@ -112,14 +141,42 @@ async def login_form(
         db
     )
 
-@auth_router.post("/refresh")
+@auth_router.post(
+        "/refresh",
+        summary="Refresh access token",
+        description="""
+        Refreshes the access token using a valid refresh token.
+        Rate limit: 20 requests per minute.
+        Requirements:
+        - `refresh_token`: The refresh token issued during login.
+        """,
+        responses={
+            200: {
+                "description": "Access token refreshed successfully",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                            "type": "bearer"
+                        }
+                    }
+                }
+            },
+            400: {
+                "description": "Bad Request - Invalid refresh token",
+            },
+            429: {
+                "description": "Too Many Requests - Rate limit exceeded",
+            }
+        }
+)
 @limiter.limit("20/minute")
 async def refresh(
     request: Request,
     refresh_token: str
 ) -> dict:
     
-    """Reresh access token endpoint."""
+    """Refresh access token endpoint."""
     
     try:
         result = await AuthService.use_refresh_token(refresh_token)
@@ -131,7 +188,40 @@ async def refresh(
         )
 
 
-@auth_router.get("/me", response_model=UserResponse)
+@auth_router.get(
+        "/me", 
+        response_model=UserResponse,
+        summary="Get current user info",
+        description="""
+        Retrieves information about the currently authenticated user.
+        Rate limit: 10 requests per minute.
+        Requirements
+        - `token`: A valid access token must be provided in the Authorization header.
+        """,
+        responses={
+            200: {
+                "description": "Current user information retrieved successfully",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "id": 1,
+                            "username": "johndoe",
+                            "name": "John Doe",
+                            "email": "john@doe.com",
+                            "is_active": True,
+                            "is_superuser": False
+                        }
+                    }
+                }
+            },
+            401: {
+                "description": "Unauthorized - Invalid or missing token",
+            },
+            429: {
+                "description": "Too Many Requests - Rate limit exceeded",
+            }
+        }
+)
 async def me(
     token: str, 
     db: AsyncSession=Depends(get_db) 
