@@ -26,13 +26,14 @@ task_router = APIRouter(prefix="/tasks", tags=["tasks"])
 #             detail=str(e)
 #         )
     
-
 @task_router.post(
         "/{goal_id}/recommend",
         summary="Generate the recommended tasks for a specific goal",
         description="""
         Generates a recommended task for the specified goal based on the user's preferences and the goal's attributes.
         Rate limit: 5 requests per minute, 10 requests per day.
+        Requirements:
+        - `goal_id`: The ID of the goal for which to generate a recommended task.
         """,
         responses={
             200: {
@@ -70,6 +71,7 @@ task_router = APIRouter(prefix="/tasks", tags=["tasks"])
             }
         }
 )
+
 @limiter.limit("5/minute")
 @limiter.limit("10/day")
 async def create_recommendation_task(
@@ -96,6 +98,8 @@ async def create_recommendation_task(
         Generates a single recommended task for the specified goal based on the user's preferences and the goal's
         attributes. This endpoint is useful when the user wants to receive one recommendation at a time, allowing them to focus on completing one task before receiving another recommendation.
         Rate limit: 5 requests per minute, 10 requests per day.
+        Requirements:
+        - `goal_id`: The ID of the goal for which to generate a recommended task.
         """,
         responses={
             200: {
@@ -123,6 +127,7 @@ async def create_recommendation_task(
                 "description": "Not Found - Goal not found or user not authenticated",
             }
         })
+
 @limiter.limit("5/minute")
 @limiter.limit("15/day")
 async def recommend_task(
@@ -149,6 +154,8 @@ async def recommend_task(
         Retrieves an alternative task recommendation for the specified task based on the user's preferences and the attributes of the original task. This endpoint is useful when the user wants to explore different options for achieving their goal
         or when they find the original recommendation unsuitable for their current situation.
         Rate limit: 5 requests per minute, 10 requests per day.
+        Requirements:
+        - `task_id`: The ID of the task for which to get an alternative recommendation.
         """,
             responses={
             200: {
@@ -176,6 +183,7 @@ async def recommend_task(
                 "description": "Not Found - Task not found or user not authenticated",
             }
         })
+
 async def get_alternative_task(
     task_id: int,
     mode: RecommendationMode,
@@ -192,7 +200,6 @@ async def get_alternative_task(
             detail=str(e)
         )
     
-
 @task_router.get(
         "/from-goal/{goal_id}", 
         response_model=list[TaskResponse],
@@ -201,6 +208,8 @@ async def get_alternative_task(
         Retrieves a list of all tasks associated with the specified goal for the authenticated user. This endpoint
         allows users to view all the tasks they have created or received as recommendations for a particular goal, helping them to manage and track their progress towards achieving that goal.
         Rate limit: 10 requests per minute.
+        Requirements:
+        - `goal_id`: The ID of the goal for which to list the tasks.
         """,
         responses={
             200: {
@@ -238,6 +247,7 @@ async def get_alternative_task(
                 "description": "Not Found - Goal not found or user not authenticated",
             }
         })
+
 async def list_goal_tasks(
     goal_id: int,
     db: AsyncSession=Depends(get_db),
@@ -255,7 +265,6 @@ async def list_goal_tasks(
             detail=str(e)
         )
 
-
 @task_router.get(
         "/{task_id}", 
         response_model=TaskResponse,
@@ -264,6 +273,8 @@ async def list_goal_tasks(
         Retrieves a specific task by its ID for the authenticated user. This endpoint allows users to view
         the details of a particular task, including its title, description, priority, deadline, and creation date. It is useful for users to check the information of a specific task they have created or received as a recommendation.
         Rate limit: 10 requests per minute.
+        Requirements:
+        - `task_id`: The ID of the task to retrieve.
         """,
         responses={
             200: {
@@ -291,6 +302,7 @@ async def list_goal_tasks(
                 "description": "Not Found - Task not found or user not authenticated",
             }
         })
+
 async def get_task_by_id(
     task_id: int,
     db: AsyncSession=Depends(get_db),
@@ -316,6 +328,8 @@ async def get_task_by_id(
         Updates a specific task by its ID for the authenticated user. This endpoint allows users to modify
         the details of a particular task, including its title, description, priority, and deadline. It is useful for users to keep their tasks up to date.
         Rate limit: 5 requests per minute.
+        Requirements:
+        - `task_id`: The ID of the task to update.
         """,
         responses={
             200: {
@@ -343,6 +357,7 @@ async def get_task_by_id(
                 "description": "Not Found - Task not found or user not authenticated",
             }
         })
+
 @limiter.limit("5/minute")
 async def update_task(
     request: Request,
@@ -370,6 +385,8 @@ async def update_task(
         description="""
         Deletes a specific task by its ID for the authenticated user. This endpoint allows users to remove tasks they have created. It is useful for users to manage their task list.
         Rate limit: 5 requests per minute.
+        Requirements:
+        - `task_id`: The ID of the task to delete.
         """,
         responses={
             200: {
@@ -385,6 +402,7 @@ async def update_task(
                 "description": "Not Found - Task not found or user not authenticated",
             }
         })
+
 @limiter.limit("5/minute")
 async def delete_task(
     request: Request,
